@@ -1,5 +1,4 @@
 from sentence_transformers import SentenceTransformer
-from chromadb.config import Settings
 
 # Step 1: Define the SentenceTransformerEmbeddings Class
 class SentenceTransformerEmbeddings:
