@@ -7,8 +7,6 @@ from langchain.schema.document import Document
 from get_embedding_function import SentenceTransformerEmbeddings
 from langchain.vectorstores.chroma import Chroma
 from langchain.vectorstores import FAISS
-from chromadb import Client
-from chromadb.config import Settings
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
@@ -44,12 +42,12 @@ def split_documents(documents: list[Document]):
     return text_splitter.split_documents(documents)
 
 
-def add_to_faiss(chunks: list[Document]):
+def add_to_chroma(chunks: list[Document]):
 
-    # Prepare the texts and embeddings for FAISS
-    texts = [chunk.page_content for chunk in chunks]  # Extract page content from chunks
-    metadata = [chunk.metadata for chunk in chunks]   # Extract metadata from chunks
-
+    # Load the existing database.
+    db = Chroma(
+        persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
+    )
 
     # Calculate Page IDs.
     chunks_with_ids = calculate_chunk_ids(chunks)
