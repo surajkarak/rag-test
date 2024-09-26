@@ -3,8 +3,15 @@ from langchain_community.vectorstores import Chroma
 from langchain.prompts import ChatPromptTemplate
 #from langchain_community.llms.ollama import Ollama
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from chromadb import Client
+from chromadb.config import Settings
 
-
+def get_chroma_client():
+    # Use DuckDB with no persistence
+    return Client(Settings(
+        chroma_db_impl="duckdb+parquet",  # Runs entirely in memory
+        persist_directory=None            # No persistence
+    ))
 
 from get_embedding_function import SentenceTransformerEmbeddings
 
@@ -23,7 +30,11 @@ Answer the question based on the above context: {question}
 def query_rag(query_text: str):
     # Prepare the DB.
     embedding_function = SentenceTransformerEmbeddings()
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+    
+    # Use Chroma client with DuckDB in-memory
+    client = get_chroma_client()
+
+    db = Chroma(client=client, embedding_function=embedding_function)
 
     # Search the DB.
     results = db.similarity_search_with_score(query_text, k=5)

@@ -12,6 +12,12 @@ from chromadb.config import Settings
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
 
+def get_chroma_client():
+    # Use DuckDB with no persistence
+    return Client(Settings(
+        chroma_db_impl="duckdb+parquet",  # Runs entirely in memory
+        persist_directory=None            # No persistence
+    ))
 
 def main():
 
@@ -45,8 +51,12 @@ def split_documents(documents: list[Document]):
 
 
 def add_to_chroma(chunks: list[Document]):
+    
+    # Use Chroma client with DuckDB in-memory
+    client = get_chroma_client()
+
     # Load the existing database.
-    db = Chroma(embedding_function=SentenceTransformerEmbeddings()
+    db = Chroma(client=client, embedding_function=SentenceTransformerEmbeddings()
     )
 
     # Calculate Page IDs.
