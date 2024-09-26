@@ -1,9 +1,12 @@
-import argparse
-from langchain.vectorstores.chroma import Chroma
+import streamlit as st
+from langchain_community.vectorstores import Chroma
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.llms.ollama import Ollama
+#from langchain_community.llms.ollama import Ollama
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from get_embedding_function import get_embedding_function
+
+
+from get_embedding_function import SentenceTransformerEmbeddings
 
 CHROMA_PATH = "chroma"
 
@@ -17,19 +20,9 @@ Answer the question based only on the following context:
 Answer the question based on the above context: {question}
 """
 
-
-def main():
-    # Create CLI.
-    parser = argparse.ArgumentParser()
-    parser.add_argument("query_text", type=str, help="The query text.")
-    args = parser.parse_args()
-    query_text = args.query_text
-    query_rag(query_text)
-
-
 def query_rag(query_text: str):
     # Prepare the DB.
-    embedding_function = get_embedding_function()
+    embedding_function = SentenceTransformerEmbeddings()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
@@ -40,14 +33,43 @@ def query_rag(query_text: str):
     prompt = prompt_template.format(context=context_text, question=query_text)
     # print(prompt)
 
-    model = Ollama(model="mistral")
-    response_text = model.invoke(prompt)
+    # Load the model and tokenizer
+    model_name = "gpt2"  # Replace with your desired model
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+
+
+    # Encode the prompt into tokens
+    inputs = tokenizer(prompt, return_tensors="pt")
+
+
+    # Generate response using the model
+    outputs = model.generate(**inputs, max_length=1024, do_sample=True)
+
+    
+    # Decode the generated tokens into text
+    response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     sources = [doc.metadata.get("id", None) for doc, _score in results]
     formatted_response = f"Response: {response_text}\nSources: {sources}"
-    print(formatted_response)
-    return response_text
+    return formatted_response
 
+
+def main():
+    st.title("RAG-based Query Answering")
+
+    # Text input for the query
+    query_text = st.text_input("Enter your question:")
+
+    # Button to trigger the query
+    if st.button("Submit"):
+        if query_text:
+            # Call the query_rag function and display the result
+            with st.spinner("Searching and generating response..."):
+                response = query_rag(query_text)
+                st.write(response)
+        else:
+            st.warning("Please enter a query.")
 
 if __name__ == "__main__":
     main()
