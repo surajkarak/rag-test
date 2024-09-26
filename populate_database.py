@@ -46,9 +46,7 @@ def split_documents(documents: list[Document]):
 
 def add_to_chroma(chunks: list[Document]):
     # Load the existing database.
-    db = Chroma(
-        persist_directory=CHROMA_PATH, 
-        embedding_function=SentenceTransformerEmbeddings()
+    db = Chroma(embedding_function=SentenceTransformerEmbeddings()
     )
 
     # Calculate Page IDs.
